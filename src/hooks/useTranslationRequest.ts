@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { TranslationRequest } from '@/lib/mock-data'
+import { buildTranslationRequestsUrl } from '@/lib/api-config'
 
 async function fetchTranslationRequest(id: string): Promise<TranslationRequest> {
-  const response = await fetch(`/api/translation-requests/${id}`)
+  const url = buildTranslationRequestsUrl(id)
+  const response = await fetch(url)
   
   if (!response.ok) {
     throw new Error('Failed to fetch translation request')

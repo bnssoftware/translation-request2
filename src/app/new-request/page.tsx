@@ -1,24 +1,27 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Copy } from "lucide-react"
 import { z } from "zod"
 import TranslationRequestForm, { TranslationRequestData } from "@/components/TranslationRequestForm"
+import { useTranslationRequest } from "@/hooks/useTranslationRequest"
+import { mapTranslationRequestToFormData } from "@/lib/data-mappers"
+import RequestToolbar from "@/components/RequestToolbar"
 
 // Zod schema for form validation
 const translationRequestSchema = z.object({
-  requestType: z.enum(['translation', 'review', 'other']),
+  requestType: z.enum(['translation', 'review']),
   member: z.string().min(1, 'Member is required'),
   phi: z.enum(['yes', 'no']),
   memberFacing: z.enum(['yes', 'no']),
   raTemplate: z.enum(['yes', 'no']),
   guidingCare: z.enum(['yes', 'no']),
-  level: z.enum(['common', 'intermediate', 'advanced']),
+  level: z.enum(['clinical', 'common', 'legal']),
   lineOfBusiness: z.string().min(1, 'Line of Business is required'),
   documentType: z.string().min(1, 'Document Type is required'),
-  language: z.string().min(1, 'Language is required'),
+  language: z.array(z.string()).min(1, 'At least one language is required'),
   requestedBy: z.string().min(1, 'Requested By is required'),
   department: z.string().min(1, 'Department is required'),
   secondContact: z.string().optional(),
@@ -36,7 +39,18 @@ type FormData = z.infer<typeof translationRequestSchema>
 
 export default function NewRequestPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState<FormData>({
+  const searchParams = useSearchParams()
+  const copyFromId = searchParams.get('copy-from-id')
+  
+  // Fetch the request to copy from if copy-from-id is provided
+  const { 
+    data: copyFromRequest, 
+    isLoading: isCopyLoading, 
+    isError: isCopyError 
+  } = useTranslationRequest(copyFromId || '', { enabled: !!copyFromId })
+  
+  // Default form data
+  const getDefaultFormData = (): FormData => ({
     requestType: 'translation',
     member: '',
     phi: 'no',
@@ -46,7 +60,7 @@ export default function NewRequestPage() {
     level: 'common',
     lineOfBusiness: '',
     documentType: '',
-    language: '',
+    language: [],
     requestedBy: '',
     department: '',
     secondContact: '',
@@ -60,10 +74,35 @@ export default function NewRequestPage() {
     notes: ''
   })
   
+  const [formData, setFormData] = useState<FormData>(getDefaultFormData())
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const initialFormDataRef = useRef<FormData>(formData)
+  const initialFormDataRef = useRef<FormData>(getDefaultFormData())
+  
+  // Update form data when copy request is loaded
+  useEffect(() => {
+    if (copyFromRequest && !isCopyLoading) {
+      const copyData = mapTranslationRequestToFormData(copyFromRequest)
+      // Remove fields that shouldn't be copied
+      const cleanCopyData = {
+        ...copyData,
+        id: undefined,
+        status: undefined,
+        submittedDate: undefined,
+        assignedTo: undefined,
+        completedDate: undefined,
+        attachments: undefined
+      }
+      setFormData(cleanCopyData)
+      initialFormDataRef.current = cleanCopyData
+    }
+  }, [copyFromRequest, isCopyLoading])
+
+  const handleReview = () => {
+    // TODO: Implement review functionality for new requests
+    console.log('Review button clicked for new request')
+  }
 
   // Check for unsaved changes
   useEffect(() => {
@@ -85,7 +124,7 @@ export default function NewRequestPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedChanges])
 
-  const handleInputChange = (field: keyof FormData, value: string | number) => {
+  const handleInputChange = (field: keyof FormData, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
@@ -126,7 +165,7 @@ export default function NewRequestPage() {
         level: 'common' as const,
         lineOfBusiness: '',
         documentType: '',
-        language: '',
+        language: [],
         requestedBy: '',
         department: '',
         secondContact: '',
@@ -154,35 +193,60 @@ export default function NewRequestPage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">New Translation Request</h1>
-          
-          {/* Save Button */}
-          <Button
-            type="button"
-            disabled={!hasUnsavedChanges}
-            onClick={() => {
-              setHasUnsavedChanges(false)
-              initialFormDataRef.current = { ...formData }
-            }}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-          >
-            Save
-          </Button>
+    <div className="w-full">
+      {/* Request Toolbar */}
+      <RequestToolbar 
+        requestId={copyFromId || undefined}
+        isLoading={isCopyLoading}
+        onReview={handleReview}
+      />
+
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              {copyFromId && (
+                <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                  <Copy className="w-4 h-4 inline mr-1" />
+                  This request has been copied from Request #{copyFromId}
+                </p>
+              )}
+            </div>
+            
+            {/* Save Button */}
+            <Button
+              type="button"
+              disabled={!hasUnsavedChanges}
+              onClick={() => {
+                setHasUnsavedChanges(false)
+                initialFormDataRef.current = { ...formData }
+              }}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+            >
+              Save
+            </Button>
+          </div>
         </div>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Submit a new translation request for your content
-        </p>
-      </div>
+
+      {/* Error handling for copy request */}
+      {copyFromId && isCopyError && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+            <p className="text-red-700 dark:text-red-300">
+              Unable to load request #{copyFromId} for copying. The form will start with default values.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-8">
         <TranslationRequestForm 
           data={formData}
           readOnly={false}
+          loading={isCopyLoading}
           onChange={handleInputChange}
           errors={errors}
         />
@@ -214,6 +278,7 @@ export default function NewRequestPage() {
           </Button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { User, Loader2, Menu, X } from "lucide-react"
 import Link from "next/link"
+import { buildApiUrl, API_CONFIG } from "@/lib/api-config"
 
 interface WindowsUserData {
   name: string;
@@ -25,7 +26,7 @@ export default function Header() {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('/api/user')
+        const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.USER))
         const data = await response.json()
         
         if (data.success) {
@@ -45,7 +46,7 @@ export default function Header() {
   }, [])
 
   return (
-    <header className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* App Name */}

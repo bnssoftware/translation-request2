@@ -259,7 +259,7 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* Tab Navigation */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 mt-8">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto">
             {tabs.map((tab) => {

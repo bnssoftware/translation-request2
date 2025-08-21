@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Calendar, Globe, FileText, Clock, CheckCircle, AlertTriangle, User, ArrowUpDown, Eye, Edit } from "lucide-react"
+import { Calendar, Globe, FileText, Clock, CheckCircle, AlertTriangle, User, ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 
 export interface TranslationRequest {
@@ -32,7 +32,6 @@ export interface TranslationRequest {
 
 interface RequestsDataTableProps {
   data: TranslationRequest[]
-  showActions?: boolean
 }
 
 const languageMap: Record<string, string> = {
@@ -76,7 +75,7 @@ const statusIcons = {
 type SortField = 'title' | 'dueDate' | 'priority' | 'status' | 'submittedDate'
 type SortDirection = 'asc' | 'desc'
 
-export default function RequestsDataTable({ data, showActions = true }: RequestsDataTableProps) {
+export default function RequestsDataTable({ data }: RequestsDataTableProps) {
   const [sortField, setSortField] = useState<SortField>('submittedDate')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
@@ -207,7 +206,6 @@ export default function RequestsDataTable({ data, showActions = true }: Requests
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
-              {showActions && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -272,20 +270,6 @@ export default function RequestsDataTable({ data, showActions = true }: Requests
                       {formatDate(request.submittedDate)}
                     </div>
                   </TableCell>
-                  {showActions && (
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Link href={`/requests/${request.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
                 </TableRow>
               )
             })}

@@ -28,10 +28,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ scrollbarGutter: 'stable' }}
       >
         <QueryProvider>
           <Header />
-          <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+          <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-20">
             {children}
           </main>
         </QueryProvider>
